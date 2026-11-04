@@ -1,27 +1,108 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { useState, useEffect } from "react";
 import ProductList from "./components/ProductList";
 import ProductDetail from "./components/ProductDetail";
+import CartButton from "./components/Cart/CartButton";
+import Cart from "./components/Cart/Cart";
 import "./App.css";
 
 function App() {
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const savedCart = localStorage.getItem("cart");
+      return savedCart ? JSON.parse(savedCart) : [];
+    } catch (error) {
+      console.error("Error loading cart from localStorage:", error);
+      return [];
+    }
+  });
+  const [showCart, setShowCart] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("cart", JSON.stringify(cartItems));
+    } catch (error) {
+      console.error("Error saving cart to localStorage:", error);
+    }
+  }, [cartItems]);
+
+  const addToCart = (product, quantity) => {
+    setCartItems((prevItems) => {
+      const existingItem = prevItems.find((item) => item.product.id === product.id);
+      if (existingItem) {
+        return prevItems.map((item) =>
+          item.product.id === product.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        );
+      }
+      return [...prevItems, { product, quantity }];
+    });
+  };
+
+  const removeFromCart = (productId) => {
+    setCartItems((prevItems) =>
+      prevItems.filter((item) => item.product.id !== productId)
+    );
+  };
+
+  const updateQuantity = (productId, newQuantity) => {
+    if (newQuantity < 1) return;
+    setCartItems((prevItems) =>
+      prevItems.map((item) =>
+        item.product.id === productId
+          ? { ...item, quantity: newQuantity }
+          : item
+      )
+    );
+  };
+
+  const clearCart = () => setCartItems([]);
+
+  const getCartTotal = () =>
+    cartItems.reduce((total, item) => {
+      const price = item.product.isOnSale ? item.product.salePrice : item.product.price;
+      return total + price * item.quantity;
+    }, 0);
+
+  const getCartItemCount = () =>
+    cartItems.reduce((count, item) => count + item.quantity, 0);
+
   return (
     <Router>
       <div className="app">
         <header className="app-header">
           <div className="header-content">
-            <h1>Blogbox Store</h1>
-            <p>Your E-Commerce Solution</p>
+            <div>
+              <h1>Blogbox Store</h1>
+              <p>Your E-Commerce Solution</p>
+            </div>
+            <CartButton
+              itemCount={getCartItemCount()}
+              total={getCartTotal()}
+              onClick={() => setShowCart(true)}
+            />
           </div>
         </header>
         <main className="app-main">
           <Routes>
             <Route path="/" element={<ProductList />} />
-            <Route path="/products/:id" element={<ProductDetail />} />
+            <Route path="/products/:id" element={<ProductDetail addToCart={addToCart} />} />
           </Routes>
         </main>
         <footer className="app-footer">
           <p>&copy; Blogbox Store. Built with React &amp; ASP.NET Core</p>
         </footer>
+        {showCart && (
+          <Cart
+            items={cartItems}
+            total={getCartTotal()}
+            onUpdateQuantity={updateQuantity}
+            onRemove={removeFromCart}
+            onClear={clearCart}
+            onClose={() => setShowCart(false)}
+          />
+        )}
       </div>
     </Router>
   );

@@ -4,6 +4,8 @@ import ProductList from "./components/ProductList";
 import ProductDetail from "./components/ProductDetail";
 import CartButton from "./components/Cart/CartButton";
 import Cart from "./components/Cart/Cart";
+import Checkout from "./components/Checkout/Checkout";
+import OrderSuccess from "./components/Checkout/OrderSuccess";
 import "./App.css";
 
 function App() {
@@ -88,6 +90,17 @@ function App() {
           <Routes>
             <Route path="/" element={<ProductList />} />
             <Route path="/products/:id" element={<ProductDetail addToCart={addToCart} />} />
+            <Route
+              path="/checkout"
+              element={
+                <Checkout
+                  cartItems={cartItems}
+                  cartTotal={getCartTotal()}
+                  clearCart={clearCart}
+                />
+              }
+            />
+            <Route path="/order/success" element={<OrderSuccess />} />
           </Routes>
         </main>
         <footer className="app-footer">
